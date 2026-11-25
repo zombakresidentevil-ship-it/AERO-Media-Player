@@ -29,17 +29,17 @@ jobs:
         run: |
           $partsDir = Join-Path $env:GITHUB_WORKSPACE ".source"
           $parts = @(Get-ChildItem -LiteralPath $partsDir -Filter "zip-part-*.b64" | Sort-Object Name)
-          if ($parts.Count -ne 16) {
+          if ($parts.Count -ne 15) {
             $names = ($parts | ForEach-Object { $_.Name }) -join ", "
-            throw "Expected 16 source chunks, found $($parts.Count). Files: $names"
+            throw "Expected 15 source chunks, found $($parts.Count). Files: $names"
           }
 
           $base64 = ($parts | ForEach-Object {
             (Get-Content -LiteralPath $_.FullName -Raw).Trim()
           }) -join ""
 
-          if ($base64.Length -ne 31900) {
-            throw "Source archive Base64 length mismatch: $($base64.Length). Expected 31900."
+          if ($base64.Length -ne 53544) {
+            throw "Source archive Base64 length mismatch: $($base64.Length). Expected 53544."
           }
 
           $bytes = [Convert]::FromBase64String($base64)
@@ -47,7 +47,7 @@ jobs:
           [System.IO.File]::WriteAllBytes($archive, $bytes)
 
           $actualHash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
-          $expectedHash = "4f3f6e69747db5a9523a37d9ee143d137fb03297bdf545bcd0b3829d4ced0ae1"
+          $expectedHash = "1200156ac700b2f17b85bb089d96b3e25765c0788c54a15578f2a2deda03191d"
           if ($actualHash -ne $expectedHash) {
             throw "Source ZIP checksum mismatch. Actual SHA256: $actualHash"
           }
@@ -71,6 +71,12 @@ jobs:
           py -3.12 -m venv .venv
           & ".\.venv\Scripts\python.exe" -m pip install --upgrade pip
           & ".\.venv\Scripts\python.exe" -m pip install -r requirements.txt
+
+      - name: Compile Python sources
+        shell: pwsh
+        run: |
+          Set-Location $env:PROJECT_DIR
+          & ".\.venv\Scripts\python.exe" -m compileall -q .
 
       - name: Run playlist tests
         shell: pwsh
