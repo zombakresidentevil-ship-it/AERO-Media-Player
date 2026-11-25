@@ -29,8 +29,9 @@ jobs:
         run: |
           $partsDir = Join-Path $env:GITHUB_WORKSPACE ".source"
           $parts = @(Get-ChildItem -LiteralPath $partsDir -Filter "zip-part-*.b64" | Sort-Object Name)
-          if ($parts.Count -ne 19) {
-            throw "Expected 19 source chunks, found $($parts.Count)."
+          if ($parts.Count -ne 20) {
+            $names = ($parts | ForEach-Object { $_.Name }) -join ", "
+            throw "Expected 20 source chunks, found $($parts.Count). Files: $names"
           }
 
           $base64 = ($parts | ForEach-Object {
@@ -38,7 +39,7 @@ jobs:
           }) -join ""
 
           if ($base64.Length -ne 31600) {
-            throw "Source archive Base64 length mismatch: $($base64.Length)."
+            throw "Source archive Base64 length mismatch: $($base64.Length). Expected 31600."
           }
 
           $bytes = [Convert]::FromBase64String($base64)
