@@ -29,9 +29,9 @@ jobs:
         run: |
           $partsDir = Join-Path $env:GITHUB_WORKSPACE ".source"
           $parts = @(Get-ChildItem -LiteralPath $partsDir -Filter "zip-part-*.b64" | Sort-Object Name)
-          if ($parts.Count -ne 20) {
+          if ($parts.Count -ne 17) {
             $names = ($parts | ForEach-Object { $_.Name }) -join ", "
-            throw "Expected 20 source chunks, found $($parts.Count). Files: $names"
+            throw "Expected 17 source chunks, found $($parts.Count). Files: $names"
           }
 
           $base64 = ($parts | ForEach-Object {
