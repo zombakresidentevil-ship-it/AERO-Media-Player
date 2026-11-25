@@ -3,7 +3,7 @@ name: Build Windows x64
 on:
   push:
     paths:
-      - "AERO_Media_Player_Project.zip"
+      - ".source/zip-part-*.b64"
       - ".github/workflows/build-windows.yml"
   workflow_dispatch:
 
@@ -24,13 +24,33 @@ jobs:
           python-version: "3.12"
           architecture: "x64"
 
-      - name: Check and extract source archive
+      - name: Reassemble and verify source archive
         shell: pwsh
         run: |
-          $archive = Join-Path $env:GITHUB_WORKSPACE "AERO_Media_Player_Project.zip"
-          if (-not (Test-Path $archive)) {
-            throw "Upload AERO_Media_Player_Project.zip to the repository root first."
+          $partsDir = Join-Path $env:GITHUB_WORKSPACE ".source"
+          $parts = @(Get-ChildItem -LiteralPath $partsDir -Filter "zip-part-*.b64" | Sort-Object Name)
+          if ($parts.Count -ne 19) {
+            throw "Expected 19 source chunks, found $($parts.Count)."
           }
+
+          $base64 = ($parts | ForEach-Object {
+            (Get-Content -LiteralPath $_.FullName -Raw).Trim()
+          }) -join ""
+
+          if ($base64.Length -ne 31600) {
+            throw "Source archive Base64 length mismatch: $($base64.Length)."
+          }
+
+          $bytes = [Convert]::FromBase64String($base64)
+          $archive = Join-Path $env:GITHUB_WORKSPACE "AERO_Media_Player_Project.zip"
+          [System.IO.File]::WriteAllBytes($archive, $bytes)
+
+          $actualHash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          $expectedHash = "fef0777acfc212177733303d13d09299ba88de79bca52f8e2e22373eb2f277dc"
+          if ($actualHash -ne $expectedHash) {
+            throw "Source ZIP checksum mismatch. Actual SHA256: $actualHash"
+          }
+
           $sourceRoot = Join-Path $env:RUNNER_TEMP "AERO-source"
           Expand-Archive -LiteralPath $archive -DestinationPath $sourceRoot -Force
           $project = Join-Path $sourceRoot "AeroMediaPlayer"
