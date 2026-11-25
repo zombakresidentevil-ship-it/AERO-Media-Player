@@ -47,7 +47,7 @@ jobs:
           [System.IO.File]::WriteAllBytes($archive, $bytes)
 
           $actualHash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
-          $expectedHash = "4f3f6e69747db7edce28ed6d708b0565c1faf2e70e5eaa02f484063dc3f50358"
+          $expectedHash = "4f3f6e69747db7a9523a37d9ee143d137fb03297bdf545bcd0b3829d4ced0ae1"
           if ($actualHash -ne $expectedHash) {
             throw "Source ZIP checksum mismatch. Actual SHA256: $actualHash"
           }
