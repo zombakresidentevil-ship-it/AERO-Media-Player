@@ -1,0 +1,45 @@
+name: Build AERO Audio Player
+on:
+  push:
+    paths:
+      - "AERO_Audio_Player/**"
+      - ".github/workflows/build-audio.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          architecture: "x64"
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          Set-Location AERO_Audio_Player
+          py -3.12 -m venv .venv
+          & ".\.venv\Scripts\python.exe" -m pip install --upgrade pip
+          & ".\.venv\Scripts\python.exe" -m pip install -r requirements.txt
+      - name: Compile sources
+        shell: pwsh
+        run: |
+          Set-Location AERO_Audio_Player
+          & ".\.venv\Scripts\python.exe" -m compileall -q .
+      - name: Build standalone EXE
+        shell: pwsh
+        run: |
+          Set-Location AERO_Audio_Player
+          & ".\.venv\Scripts\python.exe" -m PyInstaller --noconfirm --clean --onefile --windowed --name "AERO Audio Player" --collect-all pygame --collect-all mutagen --hidden-import pygame app.py
+          if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed." }
+          $exe = "dist\AERO Audio Player.exe"
+          Write-Host ("Standalone EXE size: {0:N1} MB" -f ((Get-Item $exe).Length / 1MB))
+      - name: Upload standalone player
+        uses: actions/upload-artifact@v4
+        with:
+          name: AERO-Audio-Player-Windows-x64
+          path: AERO_Audio_Player/dist/AERO Audio Player.exe
+          if-no-files-found: error
+          retention-days: 14
